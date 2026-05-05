@@ -102,6 +102,7 @@ test("ci workflow runs format lint test knip and docs build", () => {
   assert.match(workflow, /npm test/);
   assert.match(workflow, /npm run knip/);
   assert.match(workflow, /npm run docs:build/);
+  assert.match(workflow, /node-version: "22"/);
   assert.equal(
     packageJson.scripts["format:check"],
     "prettier --config config/prettier.config.json --ignore-path .gitignore --ignore-path config/prettierignore --check .",
@@ -125,7 +126,8 @@ test("release workflow uses changesets and can deploy docs manually", () => {
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /deploy_docs:/);
   assert.match(workflow, /uses: withastro\/action@v3/);
-  assert.match(workflow, /enablement: true/);
+  assert.match(workflow, /Check Pages configuration/);
+  assert.match(workflow, /node-version: "22"/);
   assert.match(workflow, /uses: actions\/deploy-pages@v4/);
   assert.equal(packageJson.scripts.changeset, "changeset");
   assert.equal(packageJson.scripts.version, "changeset version");
@@ -143,7 +145,9 @@ test("docs deploy workflow publishes starlight docs to github pages", () => {
   assert.match(workflow, /pages: write/);
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /uses: withastro\/action@v3/);
-  assert.match(workflow, /enablement: true/);
+  assert.match(workflow, /Check Pages configuration/);
+  assert.match(workflow, /pages_enabled: \$\{\{ steps\.pages\.outputs\.enabled \}\}/);
+  assert.match(workflow, /node-version: "22"/);
   assert.match(workflow, /uses: actions\/deploy-pages@v4/);
   assert.match(astroConfig, /@astrojs\/starlight/);
   assert.match(astroConfig, /DOCS_BASE_PATH/);

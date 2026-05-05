@@ -126,7 +126,8 @@ test("release workflow uses changesets and can deploy docs manually", () => {
   assert.match(workflow, /NPM_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /deploy_docs:/);
-  assert.match(workflow, /uses: withastro\/action@v3/);
+  assert.match(workflow, /npm run docs:build/);
+  assert.match(workflow, /uses: actions\/upload-pages-artifact@v3/);
   assert.match(workflow, /Check Pages configuration/);
   assert.match(workflow, /node-version: "22"/);
   assert.match(workflow, /uses: actions\/deploy-pages@v4/);
@@ -145,7 +146,8 @@ test("docs deploy workflow publishes starlight docs to github pages", () => {
   assert.match(workflow, /branches:\n\s+- master/);
   assert.match(workflow, /pages: write/);
   assert.match(workflow, /id-token: write/);
-  assert.match(workflow, /uses: withastro\/action@v3/);
+  assert.match(workflow, /npm run docs:build/);
+  assert.match(workflow, /uses: actions\/upload-pages-artifact@v3/);
   assert.match(workflow, /Check Pages configuration/);
   assert.match(workflow, /pages_enabled: \$\{\{ steps\.pages\.outputs\.enabled \}\}/);
   assert.match(workflow, /node-version: "22"/);

@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
@@ -65,7 +65,7 @@ jobs:
 
       - name: Checkout repo
         if: steps.pages.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure Pages
         if: steps.pages.outputs.enabled == 'true'

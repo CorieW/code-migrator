@@ -102,6 +102,7 @@ test("ci workflow runs format lint test knip and docs build", () => {
   assert.match(workflow, /npm test/);
   assert.match(workflow, /npm run knip/);
   assert.match(workflow, /npm run docs:build/);
+  assert.doesNotMatch(workflow, /actions\/(?:checkout|setup-node)@v4/);
   assert.match(workflow, /node-version: "22"/);
   assert.equal(
     packageJson.scripts["format:check"],

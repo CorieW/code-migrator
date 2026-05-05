@@ -42,7 +42,7 @@ jobs:
 
       - name: Checkout repo
         if: steps.pages.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure Pages
         if: steps.pages.outputs.enabled == 'true'

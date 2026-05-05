@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 import { GitHubApi } from "../src/template-sync/github-api.js";
 import { MIGRATION_LABEL } from "../src/template-sync/constants.js";
-import { downloadBundleAsset, listTemplateMigrationReleases, selectNewestMigrationRelease } from "../src/template-sync/releases.js";
+import {
+  downloadBundleAsset,
+  listTemplateMigrationReleases,
+  selectNewestMigrationRelease,
+} from "../src/template-sync/releases.js";
 import { renderMigrationPrBody, renderMigrationPrTitle } from "../src/template-sync/render.js";
 import {
   migrationMatchesHandledState,
   readRepoVariables,
-  writeSubscriberStateTransition
+  writeSubscriberStateTransition,
 } from "../src/template-sync/repo-vars.js";
 import { parseRepo, requireEnv } from "../src/template-sync/utils.js";
 
@@ -25,20 +29,50 @@ async function getBranchSha(api, repoFullName, branchName) {
 async function ensureBranch(api, repoFullName, branchName, sha) {
   const repo = parseRepo(repoFullName);
   try {
-    await api.request("GET", `/repos/${repo.owner}/${repo.repo}/git/ref/heads/${branchName}`);
+    const existingRef = await api.request("GET", `/repos/${repo.owner}/${repo.repo}/git/ref/heads/${branchName}`);
+    if (existingRef.object?.sha === sha) {
+      const placeholderSha = await createEmptyCommit(api, repoFullName, {
+        baseSha: sha,
+        message: `Open template migration ${branchName.replace(/^template-migrations\//, "")}`,
+      });
+      await api.request("PATCH", `/repos/${repo.owner}/${repo.repo}/git/refs/heads/${branchName}`, {
+        body: {
+          sha: placeholderSha,
+          force: false,
+        },
+      });
+      return "updated";
+    }
     return "existing";
   } catch (error) {
     if (error.status !== 404) {
       throw error;
     }
   }
+  const placeholderSha = await createEmptyCommit(api, repoFullName, {
+    baseSha: sha,
+    message: `Open template migration ${branchName.replace(/^template-migrations\//, "")}`,
+  });
   await api.request("POST", `/repos/${repo.owner}/${repo.repo}/git/refs`, {
     body: {
       ref: `refs/heads/${branchName}`,
-      sha
-    }
+      sha: placeholderSha,
+    },
   });
   return "created";
+}
+
+async function createEmptyCommit(api, repoFullName, { baseSha, message }) {
+  const repo = parseRepo(repoFullName);
+  const baseCommit = await api.request("GET", `/repos/${repo.owner}/${repo.repo}/git/commits/${baseSha}`);
+  const commit = await api.request("POST", `/repos/${repo.owner}/${repo.repo}/git/commits`, {
+    body: {
+      message,
+      tree: baseCommit.tree.sha,
+      parents: [baseSha],
+    },
+  });
+  return commit.sha;
 }
 
 async function findOpenMigrationPullRequest(api, repoFullName) {
@@ -46,7 +80,7 @@ async function findOpenMigrationPullRequest(api, repoFullName) {
   const issues = await api.paginate(`/repos/${repo.owner}/${repo.repo}/issues`, {
     state: "open",
     labels: MIGRATION_LABEL,
-    per_page: "100"
+    per_page: "100",
   });
   return issues.find((issue) => issue.pull_request) || null;
 }
@@ -63,8 +97,8 @@ async function ensureMigrationLabel(api, repoFullName) {
       body: {
         name: MIGRATION_LABEL,
         color: "0969da",
-        description: "Template subscriber migration"
-      }
+        description: "Template subscriber migration",
+      },
     });
   }
 }
@@ -79,7 +113,7 @@ async function main() {
   const state = await readRepoVariables(subscriberApi, subscriberRepoFullName);
   const upstreamRepoFullName = state.TEMPLATE_SYNC_UPSTREAM_REPO || defaultUpstreamRepo;
   const upstreamApi = new GitHubApi({
-    token: process.env.TEMPLATE_SYNC_UPSTREAM_READ_TOKEN || botToken
+    token: process.env.TEMPLATE_SYNC_UPSTREAM_READ_TOKEN || botToken,
   });
 
   const releases = await listTemplateMigrationReleases(upstreamApi, upstreamRepoFullName);
@@ -114,15 +148,15 @@ async function main() {
       base: defaultBranch,
       body: renderMigrationPrBody(bundle),
       draft: true,
-      maintainer_can_modify: true
-    }
+      maintainer_can_modify: true,
+    },
   });
 
   await ensureMigrationLabel(subscriberApi, subscriberRepoFullName);
   await subscriberApi.request("POST", `/repos/${repo.owner}/${repo.repo}/issues/${pullRequest.number}/labels`, {
     body: {
-      labels: [MIGRATION_LABEL]
-    }
+      labels: [MIGRATION_LABEL],
+    },
   });
   await writeSubscriberStateTransition(subscriberApi, subscriberRepoFullName, "opened", bundle.migration.id);
 

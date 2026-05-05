@@ -14,13 +14,13 @@ function readFileIfPresent(root, relativePath) {
   return {
     path: safePath,
     exists: true,
-    content: truncate(fs.readFileSync(target, "utf8"), MAX_CONTEXT_FILE_LENGTH)
+    content: truncate(fs.readFileSync(target, "utf8"), MAX_CONTEXT_FILE_LENGTH),
   };
 }
 
 export function affectedBundlePaths(bundle) {
   return uniqueSorted(
-    (bundle.changedFiles || []).flatMap((file) => [file.filename, file.previousFilename].filter(Boolean))
+    (bundle.changedFiles || []).flatMap((file) => [file.filename, file.previousFilename].filter(Boolean)),
   );
 }
 
@@ -29,7 +29,7 @@ export function collectRepoContext({ root, bundle }) {
   const configPaths = KNOWN_CONFIG_FILES.filter((file) => fs.existsSync(path.join(root, file)));
   return {
     affectedFiles: affectedPaths.map((file) => readFileIfPresent(root, file)),
-    configFiles: configPaths.map((file) => readFileIfPresent(root, file))
+    configFiles: configPaths.map((file) => readFileIfPresent(root, file)),
   };
 }
 
@@ -41,6 +41,6 @@ export async function collectPriorGenerationSummaries(api, repoFullName, issueNu
     .map((comment) => ({
       author: comment.user?.login || "",
       createdAt: comment.created_at,
-      body: comment.body
+      body: comment.body,
     }));
 }

@@ -15,6 +15,6 @@ export function scoreDrift({ root, bundle }) {
   }
   return {
     level: warnings.length >= 3 ? "high" : warnings.length > 0 ? "medium" : "low",
-    warnings
+    warnings,
   };
 }

@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createMigrationBundle, deriveMigrationIdFromPullRequest } from "../src/template-sync/bundle.js";
+import {
+  createMigrationBundle,
+  deriveMigrationIdFromPullRequest,
+  validateMigrationBundle,
+} from "../src/template-sync/bundle.js";
 
 function mergedPullRequest(overrides = {}) {
   return {
@@ -15,10 +19,10 @@ function mergedPullRequest(overrides = {}) {
     base: {
       ref: "main",
       repo: {
-        full_name: "acme/template"
-      }
+        full_name: "acme/template",
+      },
     },
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -29,9 +33,9 @@ test("builds a stable migration bundle from merged PR data", () => {
     pullRequest: pr,
     files: [
       { filename: "src/app.ts", status: "modified", additions: 5, deletions: 2, changes: 7 },
-      { filename: "package.json", status: "modified", additions: 1, deletions: 1, changes: 2 }
+      { filename: "package.json", status: "modified", additions: 1, deletions: 1, changes: 2 },
     ],
-    unifiedDiff: "diff --git a/package.json b/package.json"
+    unifiedDiff: "diff --git a/package.json b/package.json",
   });
 
   assert.equal(deriveMigrationIdFromPullRequest(pr), "template-migration/pr-42-0123456789ab");
@@ -40,10 +44,25 @@ test("builds a stable migration bundle from merged PR data", () => {
   assert.equal(bundle.sourcePullRequest.mergedInto, "main");
   assert.deepEqual(
     bundle.changedFiles.map((file) => file.filename),
-    ["package.json", "src/app.ts"]
+    ["package.json", "src/app.ts"],
   );
   assert.match(bundle.sourceSummary, /Add stricter linting/);
   assert.match(bundle.unifiedDiff, /diff --git/);
+});
+
+test("builds migration bundles for non-main template default branches", () => {
+  const pr = mergedPullRequest({ base: { ref: "trunk", repo: { full_name: "acme/template" } } });
+  const bundle = createMigrationBundle({
+    templateRepoFullName: "acme/template",
+    templateBranch: "trunk",
+    pullRequest: pr,
+    files: [],
+    unifiedDiff: "",
+  });
+
+  assert.equal(bundle.templateRepository.branch, "trunk");
+  assert.equal(bundle.sourcePullRequest.mergedInto, "trunk");
+  assert.equal(validateMigrationBundle(bundle), bundle);
 });
 
 test("rejects unmerged PRs", () => {
@@ -53,22 +72,23 @@ test("rejects unmerged PRs", () => {
         templateRepoFullName: "acme/template",
         pullRequest: mergedPullRequest({ merged: false, merged_at: null }),
         files: [],
-        unifiedDiff: ""
+        unifiedDiff: "",
       }),
-    /not merged/
+    /not merged/,
   );
 });
 
-test("rejects PRs not merged into main", () => {
+test("rejects PRs not merged into the template branch", () => {
   assert.throws(
     () =>
       createMigrationBundle({
         templateRepoFullName: "acme/template",
+        templateBranch: "trunk",
         pullRequest: mergedPullRequest({ base: { ref: "develop", repo: { full_name: "acme/template" } } }),
         files: [],
-        unifiedDiff: ""
+        unifiedDiff: "",
       }),
-    /not main/
+    /not trunk/,
   );
 });
 
@@ -79,8 +99,8 @@ test("rejects PRs from a different base repository", () => {
         templateRepoFullName: "acme/template",
         pullRequest: mergedPullRequest({ base: { ref: "main", repo: { full_name: "acme/other" } } }),
         files: [],
-        unifiedDiff: ""
+        unifiedDiff: "",
       }),
-    /not acme\/template/
+    /not acme\/template/,
   );
 });

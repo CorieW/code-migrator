@@ -6,7 +6,7 @@ export function blankSubscriberState() {
     [STATE_VARIABLES.lastHandled]: "",
     [STATE_VARIABLES.lastApplied]: "",
     [STATE_VARIABLES.lastDeclined]: "",
-    [STATE_VARIABLES.upstreamRepo]: ""
+    [STATE_VARIABLES.upstreamRepo]: "",
   };
 }
 
@@ -14,7 +14,7 @@ export function migrationMatchesHandledState(state, migrationId) {
   return [
     state[STATE_VARIABLES.lastHandled],
     state[STATE_VARIABLES.lastApplied],
-    state[STATE_VARIABLES.lastDeclined]
+    state[STATE_VARIABLES.lastDeclined],
   ].includes(migrationId);
 }
 
@@ -54,14 +54,14 @@ export async function writeRepoVariable(api, repoFullName, name, value) {
   const repo = parseRepo(repoFullName);
   try {
     await api.request("PATCH", `/repos/${repo.owner}/${repo.repo}/actions/variables/${name}`, {
-      body: { name, value: String(value || "") }
+      body: { name, value: String(value || "") },
     });
   } catch (error) {
     if (error.status !== 404) {
       throw error;
     }
     await api.request("POST", `/repos/${repo.owner}/${repo.repo}/actions/variables`, {
-      body: { name, value: String(value || "") }
+      body: { name, value: String(value || "") },
     });
   }
 }

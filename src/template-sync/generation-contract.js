@@ -11,7 +11,7 @@ export const GENERATION_RESPONSE_SCHEMA = {
     rationale: { type: "string" },
     driftWarnings: {
       type: "array",
-      items: { type: "string" }
+      items: { type: "string" },
     },
     operations: {
       type: "array",
@@ -22,11 +22,11 @@ export const GENERATION_RESPONSE_SCHEMA = {
         properties: {
           action: { type: "string", enum: ["create", "update", "delete"] },
           path: { type: "string" },
-          content: { type: "string" }
-        }
-      }
-    }
-  }
+          content: { type: "string" },
+        },
+      },
+    },
+  },
 };
 
 export function parseGenerationJson(rawText) {
@@ -77,8 +77,8 @@ export function validateGenerationPlan(plan) {
     operations: plan.operations.map((operation) => ({
       action: operation.action,
       path: safeRelativePath(operation.path),
-      content: operation.content
-    }))
+      content: operation.content,
+    })),
   };
 }
 

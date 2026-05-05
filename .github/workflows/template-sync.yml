@@ -15,16 +15,13 @@ concurrency:
 env:
   # Set this in the template repo before subscribers are created, for example: octo-org/template-repo
   TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO: OWNER/TEMPLATE_REPO
+  # Set this to a published npm package, git URL, or tarball package spec.
+  TEMPLATE_SYNC_PACKAGE: ""
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout subscriber repo
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.TEMPLATE_SYNC_BOT_TOKEN }}
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -37,4 +34,9 @@ jobs:
           TEMPLATE_SYNC_BOT_TOKEN: ${{ secrets.TEMPLATE_SYNC_BOT_TOKEN }}
           TEMPLATE_SYNC_UPSTREAM_READ_TOKEN: ${{ secrets.TEMPLATE_SYNC_UPSTREAM_READ_TOKEN }}
           TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO: ${{ env.TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO }}
-        run: node scripts/subscriber-sync.mjs
+        run: |
+          if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
+            echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."
+            exit 1
+          fi
+          npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- subscriber-template-sync

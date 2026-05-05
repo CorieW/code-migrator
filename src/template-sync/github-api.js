@@ -11,7 +11,7 @@ export class GitHubApi {
       Accept: accept,
       "User-Agent": "template-subscriber-migration-system",
       "X-GitHub-Api-Version": "2022-11-28",
-      ...headers
+      ...headers,
     };
     let requestBody;
     if (body !== undefined) {
@@ -28,7 +28,7 @@ export class GitHubApi {
     const response = await this.fetchImpl(url, {
       method,
       headers: requestHeaders,
-      body: requestBody
+      body: requestBody,
     });
     const text = await response.text();
     if (!response.ok) {
@@ -69,8 +69,8 @@ export class GitHubApi {
       body: data,
       accept: "application/vnd.github+json",
       headers: {
-        "Content-Type": contentType
-      }
+        "Content-Type": contentType,
+      },
     });
   }
 }

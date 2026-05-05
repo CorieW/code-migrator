@@ -8,17 +8,20 @@ export function deriveMigrationIdFromPullRequest(pullRequest) {
   return `${MIGRATION_TAG_PREFIX}pr-${pullRequest.number}-${shortSha(pullRequest.merge_commit_sha)}`;
 }
 
-export function assertPublishablePullRequest(pullRequest, templateRepoFullName) {
+export function assertPublishablePullRequest(pullRequest, templateRepoFullName, templateBranch = "main") {
   if (!pullRequest) {
     throw new Error("Pull request was not found");
   }
+  if (!templateBranch || typeof templateBranch !== "string") {
+    throw new Error("Template branch is required");
+  }
   if (pullRequest.base?.repo?.full_name !== templateRepoFullName) {
     throw new Error(
-      `PR #${pullRequest.number} belongs to ${pullRequest.base?.repo?.full_name || "<unknown>"}, not ${templateRepoFullName}`
+      `PR #${pullRequest.number} belongs to ${pullRequest.base?.repo?.full_name || "<unknown>"}, not ${templateRepoFullName}`,
     );
   }
-  if (pullRequest.base?.ref !== "main") {
-    throw new Error(`PR #${pullRequest.number} targets ${pullRequest.base?.ref || "<unknown>"}, not main`);
+  if (pullRequest.base?.ref !== templateBranch) {
+    throw new Error(`PR #${pullRequest.number} targets ${pullRequest.base?.ref || "<unknown>"}, not ${templateBranch}`);
   }
   if (!pullRequest.merged || !pullRequest.merged_at) {
     throw new Error(`PR #${pullRequest.number} is not merged`);
@@ -46,21 +49,27 @@ export function normalizeChangedFiles(files) {
       status: file.status,
       additions: Number(file.additions || 0),
       deletions: Number(file.deletions || 0),
-      changes: Number(file.changes || 0)
+      changes: Number(file.changes || 0),
     }));
 }
 
-export function createMigrationBundle({ templateRepoFullName, pullRequest, files, unifiedDiff }) {
-  assertPublishablePullRequest(pullRequest, templateRepoFullName);
+export function createMigrationBundle({
+  templateRepoFullName,
+  templateBranch = "main",
+  pullRequest,
+  files,
+  unifiedDiff,
+}) {
+  assertPublishablePullRequest(pullRequest, templateRepoFullName, templateBranch);
   const migrationId = deriveMigrationIdFromPullRequest(pullRequest);
   return {
     schemaVersion: "template-migration-bundle/v1",
     templateRepository: {
       fullName: templateRepoFullName,
-      branch: "main"
+      branch: templateBranch,
     },
     migration: {
-      id: migrationId
+      id: migrationId,
     },
     sourcePullRequest: {
       number: pullRequest.number,
@@ -70,11 +79,11 @@ export function createMigrationBundle({ templateRepoFullName, pullRequest, files
       labels: (pullRequest.labels || []).map((label) => label.name || label).filter(Boolean),
       mergedSha: pullRequest.merge_commit_sha,
       mergedAt: pullRequest.merged_at,
-      mergedInto: "main"
+      mergedInto: templateBranch,
     },
     sourceSummary: subscriberSummaryFromPullRequest(pullRequest),
     changedFiles: normalizeChangedFiles(files || []),
-    unifiedDiff: String(unifiedDiff || "")
+    unifiedDiff: String(unifiedDiff || ""),
   };
 }
 
@@ -86,14 +95,14 @@ export function validateMigrationBundle(bundle) {
   if (!bundle?.templateRepository?.fullName) {
     errors.push("templateRepository.fullName is required");
   }
-  if (bundle?.templateRepository?.branch !== "main") {
-    errors.push("templateRepository.branch must be main");
+  if (!bundle?.templateRepository?.branch) {
+    errors.push("templateRepository.branch is required");
   }
   if (!bundle?.migration?.id?.startsWith(MIGRATION_TAG_PREFIX)) {
     errors.push(`migration.id must start with ${MIGRATION_TAG_PREFIX}`);
   }
-  if (bundle?.sourcePullRequest?.mergedInto !== "main") {
-    errors.push("sourcePullRequest.mergedInto must be main");
+  if (bundle?.sourcePullRequest?.mergedInto !== bundle?.templateRepository?.branch) {
+    errors.push("sourcePullRequest.mergedInto must match templateRepository.branch");
   }
   if (!bundle?.sourcePullRequest?.mergedSha) {
     errors.push("sourcePullRequest.mergedSha is required");

@@ -9,7 +9,8 @@ export function isMigrationRelease(release) {
 export function selectNewestMigrationRelease(releases) {
   const candidates = releases.filter(isMigrationRelease);
   candidates.sort((a, b) => {
-    const byPublishedAt = Date.parse(b.published_at || b.created_at || 0) - Date.parse(a.published_at || a.created_at || 0);
+    const byPublishedAt =
+      Date.parse(b.published_at || b.created_at || 0) - Date.parse(a.published_at || a.created_at || 0);
     if (byPublishedAt !== 0) {
       return byPublishedAt;
     }
@@ -23,7 +24,7 @@ export function renderReleaseBody(bundle) {
 
 Source PR: ${bundle.sourcePullRequest.url}
 
-This migration was published from a template PR merged into main.`;
+This migration was published from a template PR merged into ${bundle.templateRepository.branch}.`;
 }
 
 export async function listTemplateMigrationReleases(api, upstreamRepoFullName) {
@@ -45,7 +46,7 @@ export async function downloadBundleAsset(api, upstreamRepoFullName, release) {
   }
   const text = await api.request("GET", `/repos/${repo.owner}/${repo.repo}/releases/assets/${asset.id}`, {
     accept: "application/octet-stream",
-    raw: "text"
+    raw: "text",
   });
   return validateMigrationBundle(JSON.parse(text));
 }

@@ -17,18 +17,21 @@ async function main() {
   const repo = parseRepo(repoFullName);
   const api = new GitHubApi({ token });
 
+  const repository = await api.request("GET", `/repos/${repo.owner}/${repo.repo}`);
+  const templateBranch = repository.default_branch || "main";
   const pullRequest = await api.request("GET", `/repos/${repo.owner}/${repo.repo}/pulls/${prNumber}`);
   const files = await api.paginate(`/repos/${repo.owner}/${repo.repo}/pulls/${prNumber}/files`, { per_page: "100" });
   const unifiedDiff = await api.request("GET", `/repos/${repo.owner}/${repo.repo}/pulls/${prNumber}`, {
     accept: "application/vnd.github.v3.patch",
-    raw: "text"
+    raw: "text",
   });
 
   const bundle = createMigrationBundle({
     templateRepoFullName: repoFullName,
+    templateBranch,
     pullRequest,
     files,
-    unifiedDiff
+    unifiedDiff,
   });
   const bundleJson = `${JSON.stringify(bundle, null, 2)}\n`;
   fs.writeFileSync(MIGRATION_BUNDLE_ASSET_NAME, bundleJson, "utf8");
@@ -36,12 +39,12 @@ async function main() {
   const release = await api.request("POST", `/repos/${repo.owner}/${repo.repo}/releases`, {
     body: {
       tag_name: bundle.migration.id,
-      target_commitish: "main",
+      target_commitish: pullRequest.merge_commit_sha,
       name: bundle.migration.id,
       body: renderReleaseBody(bundle),
       draft: false,
-      prerelease: false
-    }
+      prerelease: false,
+    },
   });
 
   await api.uploadAsset(release.upload_url, MIGRATION_BUNDLE_ASSET_NAME, Buffer.from(bundleJson, "utf8"));

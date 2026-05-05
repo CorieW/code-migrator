@@ -4,9 +4,13 @@ import { selectNewestMigrationRelease } from "../src/template-sync/releases.js";
 import {
   applyStateTransition,
   blankSubscriberState,
-  migrationMatchesHandledState
+  migrationMatchesHandledState,
 } from "../src/template-sync/repo-vars.js";
-import { parseTemplateSyncCommand, hasWritePermission, extractMigrationIdFromPr } from "../src/template-sync/commands.js";
+import {
+  parseTemplateSyncCommand,
+  hasWritePermission,
+  extractMigrationIdFromPr,
+} from "../src/template-sync/commands.js";
 import { STATE_VARIABLES } from "../src/template-sync/constants.js";
 
 test("selects only the newest template migration release", () => {
@@ -15,20 +19,20 @@ test("selects only the newest template migration release", () => {
       tag_name: "template-migration/pr-1-aaaa",
       published_at: "2026-04-27T00:00:00Z",
       draft: false,
-      prerelease: false
+      prerelease: false,
     },
     {
       tag_name: "unrelated/v1",
       published_at: "2026-04-29T00:00:00Z",
       draft: false,
-      prerelease: false
+      prerelease: false,
     },
     {
       tag_name: "template-migration/pr-2-bbbb",
       published_at: "2026-04-28T00:00:00Z",
       draft: false,
-      prerelease: false
-    }
+      prerelease: false,
+    },
   ];
 
   assert.equal(selectNewestMigrationRelease(releases).tag_name, "template-migration/pr-2-bbbb");
@@ -41,14 +45,14 @@ test("older missed migrations are ignored when a newer release exists", () => {
       tag_name: "template-migration/pr-10-old",
       published_at: "2026-04-20T00:00:00Z",
       draft: false,
-      prerelease: false
+      prerelease: false,
     },
     {
       tag_name: "template-migration/pr-11-new",
       published_at: "2026-04-29T00:00:00Z",
       draft: false,
-      prerelease: false
-    }
+      prerelease: false,
+    },
   ];
 
   const newest = selectNewestMigrationRelease(releases);
@@ -72,15 +76,15 @@ test("state transitions record opened, applied, and declined migrations", () => 
 test("parses approve, revise, and decline commands with raw instructions", () => {
   assert.deepEqual(parseTemplateSyncCommand("/template-sync approve\nPrefer the existing router."), {
     action: "approve",
-    instructions: "Prefer the existing router."
+    instructions: "Prefer the existing router.",
   });
   assert.deepEqual(parseTemplateSyncCommand("/template-sync revise\nUse a smaller helper."), {
     action: "revise",
-    instructions: "Use a smaller helper."
+    instructions: "Use a smaller helper.",
   });
   assert.deepEqual(parseTemplateSyncCommand("/template-sync decline"), {
     action: "decline",
-    instructions: ""
+    instructions: "",
   });
   assert.equal(parseTemplateSyncCommand("/template-sync approve inline text"), null);
 });
@@ -97,15 +101,15 @@ test("extracts migration ids from PR marker or branch name", () => {
   assert.equal(
     extractMigrationIdFromPr({
       body: "<!-- template-sync:migration-id=template-migration/pr-5-abc -->",
-      headRef: ""
+      headRef: "",
     }),
-    "template-migration/pr-5-abc"
+    "template-migration/pr-5-abc",
   );
   assert.equal(
     extractMigrationIdFromPr({
       body: "",
-      headRef: "template-migrations/template-migration/pr-6-def"
+      headRef: "template-migrations/template-migration/pr-6-def",
     }),
-    "template-migration/pr-6-def"
+    "template-migration/pr-6-def",
   );
 });

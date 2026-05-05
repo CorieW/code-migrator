@@ -43,7 +43,9 @@ export function truncate(value, maxLength) {
 }
 
 export function normalizeNewlines(value) {
-  return String(value || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  return String(value || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n");
 }
 
 export function safeRelativePath(filePath) {

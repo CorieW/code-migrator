@@ -6,7 +6,7 @@ export const STATE_VARIABLES = Object.freeze({
   lastHandled: "TEMPLATE_SYNC_LAST_HANDLED_MIGRATION_ID",
   lastApplied: "TEMPLATE_SYNC_LAST_APPLIED_MIGRATION_ID",
   lastDeclined: "TEMPLATE_SYNC_LAST_DECLINED_MIGRATION_ID",
-  upstreamRepo: "TEMPLATE_SYNC_UPSTREAM_REPO"
+  upstreamRepo: "TEMPLATE_SYNC_UPSTREAM_REPO",
 });
 
 export const GENERATION_COMMENT_MARKER = "<!-- template-sync:generation-summary -->";
@@ -28,5 +28,5 @@ export const KNOWN_CONFIG_FILES = Object.freeze([
   ".eslintrc",
   ".eslintrc.json",
   ".prettierrc",
-  ".prettierrc.json"
+  ".prettierrc.json",
 ]);

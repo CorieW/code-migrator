@@ -6,13 +6,13 @@ export function buildGenerationPrompt({ mode, bundle, repoContext, instructions,
     contract: {
       description:
         "Return only JSON matching the provided schema. Use full file contents for every create/update operation. Do not return patches or markdown.",
-      schema: GENERATION_RESPONSE_SCHEMA
+      schema: GENERATION_RESPONSE_SCHEMA,
     },
     migrationBundle: bundle,
     subscriberRepoContext: repoContext,
     adminInstructions: instructions || "",
     priorGenerationSummaries: priorGenerationSummaries || [],
-    drift
+    drift,
   };
 }
 
@@ -36,7 +36,7 @@ export async function callOpenAiForGeneration({ apiKey, model, prompt, fetchImpl
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       model,
@@ -44,22 +44,22 @@ export async function callOpenAiForGeneration({ apiKey, model, prompt, fetchImpl
         {
           role: "system",
           content:
-            "You generate best-effort subscriber repository migrations from template PR bundles. You must return valid JSON file operations only."
+            "You generate best-effort subscriber repository migrations from template PR bundles. You must return valid JSON file operations only.",
         },
         {
           role: "user",
-          content: JSON.stringify(prompt)
-        }
+          content: JSON.stringify(prompt),
+        },
       ],
       text: {
         format: {
           type: "json_schema",
           name: "template_migration_file_operations",
           strict: true,
-          schema: GENERATION_RESPONSE_SCHEMA
-        }
-      }
-    })
+          schema: GENERATION_RESPONSE_SCHEMA,
+        },
+      },
+    }),
   });
   const responseText = await response.text();
   if (!response.ok) {

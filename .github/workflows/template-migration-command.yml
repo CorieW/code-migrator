@@ -15,6 +15,8 @@ concurrency:
 env:
   # Set this in the template repo before subscribers are created, for example: octo-org/template-repo
   TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO: OWNER/TEMPLATE_REPO
+  # Set this to a published npm package, git URL, or tarball package spec.
+  TEMPLATE_SYNC_PACKAGE: ""
   OPENAI_MODEL: gpt-4.1
 
 jobs:
@@ -42,4 +44,9 @@ jobs:
           TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO: ${{ env.TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ env.OPENAI_MODEL }}
-        run: node scripts/handle-template-sync-command.mjs
+        run: |
+          if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
+            echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."
+            exit 1
+          fi
+          npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- handle-template-sync-command

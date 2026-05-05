@@ -1,13 +1,51 @@
 {
   "name": "template-subscriber-migration-system",
   "version": "0.1.0",
-  "private": true,
+  "description": "GitHub Actions helpers for publishing template migration bundles and applying them in subscriber repositories.",
+  "license": "UNLICENSED",
   "type": "module",
+  "bin": {
+    "publish-template-migration": "./scripts/publish-template-migration.mjs",
+    "subscriber-template-sync": "./scripts/subscriber-sync.mjs",
+    "handle-template-sync-command": "./scripts/handle-template-sync-command.mjs"
+  },
+  "files": [
+    "scripts/",
+    "src/template-sync/",
+    "README.md"
+  ],
+  "keywords": [
+    "github-actions",
+    "migration",
+    "template",
+    "subscriber",
+    "openai"
+  ],
   "scripts": {
+    "format": "prettier --config config/prettier.config.json --ignore-path .gitignore --ignore-path config/prettierignore --write .",
+    "format:check": "prettier --config config/prettier.config.json --ignore-path .gitignore --ignore-path config/prettierignore --check .",
+    "lint:syntax": "node --check scripts/*.mjs && node --check src/template-sync/*.js && node --check test/*.test.js",
+    "lint": "npm run lint:syntax && eslint --config config/eslint.config.js .",
     "test": "node --test",
-    "lint": "node --check scripts/*.mjs && node --check src/template-sync/*.js && node --check test/*.test.js"
+    "knip": "knip --config config/knip.json",
+    "docs:dev": "astro dev",
+    "docs:build": "astro build",
+    "docs:preview": "astro preview",
+    "pack:check": "npm pack --dry-run",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@astrojs/starlight": "^0.38.4",
+    "@changesets/cli": "^2.31.0",
+    "@eslint/js": "^9.39.4",
+    "astro": "^6.2.2",
+    "eslint": "^9.39.4",
+    "knip": "^6.11.0",
+    "prettier": "^3.8.3"
   }
 }

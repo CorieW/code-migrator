@@ -6,9 +6,15 @@ import path from "node:path";
 import {
   applyGenerationPlan,
   parseAndValidateGenerationPlan,
-  validateGenerationPlan
+  validateGenerationPlan,
 } from "../src/template-sync/generation-contract.js";
 import { scoreDrift } from "../src/template-sync/drift.js";
+import {
+  commandEnvironment,
+  detectPackageManager,
+  packageScriptCommand,
+  runValidation,
+} from "../src/template-sync/validation.js";
 
 test("validates and applies create, update, and delete operations", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "template-sync-"));
@@ -20,9 +26,9 @@ test("validates and applies create, update, and delete operations", () => {
     operations: [
       { action: "create", path: "new/file.txt", content: "new content\n" },
       { action: "update", path: "existing.txt", content: "new content\n" },
-      { action: "delete", path: "remove.txt" }
+      { action: "delete", path: "remove.txt" },
     ],
-    driftWarnings: []
+    driftWarnings: [],
   });
 
   assert.deepEqual(applyGenerationPlan(plan, { root }), ["new/file.txt", "existing.txt", "remove.txt"]);
@@ -36,9 +42,9 @@ test("rejects malformed model output", () => {
     () =>
       validateGenerationPlan({
         summary: "bad",
-        operations: [{ action: "update", path: "../escape.txt", content: "no" }]
+        operations: [{ action: "update", path: "../escape.txt", content: "no" }],
       }),
-    /Malformed generation output/
+    /Malformed generation output/,
   );
   assert.throws(() => parseAndValidateGenerationPlan("not json"), /Unexpected token/);
 });
@@ -48,9 +54,39 @@ test("reports drift warnings but does not block generation", () => {
   const drift = scoreDrift({
     root,
     bundle: {
-      changedFiles: [{ filename: "src/missing.ts", status: "modified" }]
-    }
+      changedFiles: [{ filename: "src/missing.ts", status: "modified" }],
+    },
   });
   assert.equal(drift.level, "medium");
   assert.match(drift.warnings[0], /does not exist/);
+});
+
+test("selects validation package manager from package metadata and lockfiles", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "template-sync-"));
+  fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ packageManager: "yarn@4.5.0" }), "utf8");
+  assert.equal(detectPackageManager(root), "yarn");
+  assert.deepEqual(packageScriptCommand("yarn", "lint"), { command: "corepack", args: ["yarn", "lint"] });
+
+  const npmRoot = fs.mkdtempSync(path.join(os.tmpdir(), "template-sync-"));
+  fs.writeFileSync(path.join(npmRoot, "package.json"), JSON.stringify({ scripts: { test: "node --test" } }), "utf8");
+  fs.writeFileSync(path.join(npmRoot, "package-lock.json"), "{}", "utf8");
+  assert.equal(detectPackageManager(npmRoot), "npm");
+  assert.deepEqual(packageScriptCommand("npm", "test"), { command: "npm", args: ["run", "test"] });
+});
+
+test("reports invalid root package json as validation failure", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "template-sync-"));
+  fs.writeFileSync(path.join(root, "package.json"), "{ invalid json", "utf8");
+
+  const results = await runValidation({ root });
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].command, "parse package.json");
+  assert.equal(results[0].exitCode, 1);
+  assert.match(results[0].stderr, /Invalid package\.json/);
+});
+
+test("disables corepack package manager auto-pinning", () => {
+  assert.equal(commandEnvironment("corepack", {}).COREPACK_ENABLE_AUTO_PIN, "0");
+  assert.deepEqual(commandEnvironment("npm", { EXISTING: "1" }), { EXISTING: "1" });
 });

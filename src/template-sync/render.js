@@ -20,7 +20,7 @@ ${bundle.sourceSummary}
 
 Source PR: ${bundle.sourcePullRequest.url}
 
-The source PR was merged into \`main\` at ${bundle.sourcePullRequest.mergedAt} with merge SHA \`${bundle.sourcePullRequest.mergedSha}\`.
+The source PR was merged into \`${bundle.sourcePullRequest.mergedInto}\` at ${bundle.sourcePullRequest.mergedAt} with merge SHA \`${bundle.sourcePullRequest.mergedSha}\`.
 
 ## Affected Files
 
@@ -37,16 +37,27 @@ ${renderFileList(bundle.changedFiles)}
 No code has been generated yet. This draft PR is waiting for an admin decision.`;
 }
 
-export function renderGenerationComment({ mode, instructions, changedFiles, validationResults, driftWarnings, summary }) {
+export function renderGenerationComment({
+  mode,
+  instructions,
+  changedFiles,
+  validationResults,
+  driftWarnings,
+  summary,
+}) {
   const title = mode === "revise" ? "Template migration revision" : "Template migration generation";
   const instructionText = instructions?.trim() || "No extra instructions were provided.";
-  const files = changedFiles?.length ? changedFiles.map((file) => `- \`${file}\``).join("\n") : "- No file changes were produced.";
+  const files = changedFiles?.length
+    ? changedFiles.map((file) => `- \`${file}\``).join("\n")
+    : "- No file changes were produced.";
   const validation = validationResults?.length
     ? validationResults
         .map((result) => `- \`${result.command}\`: ${result.exitCode === 0 ? "passed" : `failed (${result.exitCode})`}`)
         .join("\n")
     : "- No validation commands were available.";
-  const drift = driftWarnings?.length ? driftWarnings.map((warning) => `- ${warning}`).join("\n") : "- No drift warnings were reported.";
+  const drift = driftWarnings?.length
+    ? driftWarnings.map((warning) => `- ${warning}`).join("\n")
+    : "- No drift warnings were reported.";
 
   return `${GENERATION_COMMENT_MARKER}
 

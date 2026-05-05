@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: Pull request number merged into main
+        description: Pull request number merged into the template default branch
         required: true
         type: number
 
@@ -12,13 +12,14 @@ permissions:
   contents: write
   pull-requests: read
 
+env:
+  # Set this to a published npm package, git URL, or tarball package spec.
+  TEMPLATE_SYNC_PACKAGE: ""
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout template repo
-        uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -29,4 +30,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: node scripts/publish-template-migration.mjs "${{ inputs.pr_number }}"
+        run: |
+          if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
+            echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."
+            exit 1
+          fi
+          npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- publish-template-migration "${{ inputs.pr_number }}"

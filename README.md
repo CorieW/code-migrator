@@ -1,6 +1,6 @@
 # Template Subscriber Migration System
 
-This repository contains GitHub Actions workflows and Node scripts for publishing template migration bundles and letting subscriber repositories opt into generated downstream migration PRs.
+This repository contains an installable npm package and GitHub Actions workflow examples for publishing template migration bundles and letting subscriber repositories opt into generated downstream migration PRs.
 
 ## What It Does
 
@@ -13,15 +13,39 @@ The system has two sides:
 
 ## Included Workflows
 
-- `.github/workflows/template-publish-migration.yml` manually publishes one GitHub Release per merged template PR into `main`.
+- `.github/workflows/template-publish-migration.yml` manually publishes one GitHub Release per template PR merged into the template repository default branch.
 - `.github/workflows/template-sync.yml` runs daily or manually in subscriber repos, discovers only the newest `template-migration/` release, and opens one draft migration PR at a time.
 - `.github/workflows/template-migration-command.yml` handles `/template-sync approve`, `/template-sync revise`, and `/template-sync decline` comments on migration PRs.
 
+## Package Commands
+
+The npm package exposes three command binaries:
+
+| Command                                  | Used by         | Purpose                                                                                              |
+| ---------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------- |
+| `publish-template-migration <pr-number>` | Template repo   | Publishes a migration bundle release for a merged template PR.                                       |
+| `subscriber-template-sync`               | Subscriber repo | Discovers the newest upstream migration and opens a draft migration PR.                              |
+| `handle-template-sync-command`           | Subscriber repo | Handles `/template-sync approve`, `/template-sync revise`, and `/template-sync decline` PR comments. |
+
+Run a command directly from npm:
+
+```sh
+npm exec --yes --package <package-spec> -- subscriber-template-sync
+```
+
+Or install it in a repository:
+
+```sh
+npm install --save-dev template-subscriber-migration-system
+```
+
+Then run package binaries with `npx`, package scripts, or GitHub Actions.
+
 ## How To Use It
 
-### 1. Add the files to the template repository
+### 1. Add the workflow files to the template repository
 
-Copy the workflows, scripts, and `src/template-sync` modules into the repository that will act as the upstream template.
+Copy the workflow files into the repository that will act as the upstream template. The workflows run the migration commands from the npm package, so subscriber repositories do not need to carry the package source files.
 
 Keep this workflow enabled in the template repository:
 
@@ -55,21 +79,29 @@ Update these files:
 
 If subscribers are generated from the template, make this change in the template before creating or updating subscriber repositories so the copied workflows already point back to the correct upstream template.
 
+The workflow examples load the package from `TEMPLATE_SYNC_PACKAGE`. Set it to a package spec that GitHub Actions can install, such as a published npm version, git URL, or tarball URL:
+
+```yaml
+TEMPLATE_SYNC_PACKAGE: template-subscriber-migration-system@0.1.0
+```
+
+Do not leave it empty. The workflow exits before running if this value is not configured.
+
 ### 3. Add subscriber repository secrets
 
 Each subscriber repository needs these secrets:
 
-| Secret | Required | Purpose |
-| --- | --- | --- |
-| `TEMPLATE_SYNC_BOT_TOKEN` | Yes | Fine-grained token used to open PRs, push migration commits, comment on PRs, and write repository variables. |
-| `OPENAI_API_KEY` | Yes | Used by `/template-sync approve` and `/template-sync revise` to generate the subscriber-specific code changes. |
-| `TEMPLATE_SYNC_UPSTREAM_READ_TOKEN` | No | Token used to read private upstream template releases. If omitted, the bot token is reused. |
+| Secret                              | Required | Purpose                                                                                                        |
+| ----------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `TEMPLATE_SYNC_BOT_TOKEN`           | Yes      | Fine-grained token used to open PRs, push migration commits, comment on PRs, and write repository variables.   |
+| `OPENAI_API_KEY`                    | Yes      | Used by `/template-sync approve` and `/template-sync revise` to generate the subscriber-specific code changes. |
+| `TEMPLATE_SYNC_UPSTREAM_READ_TOKEN` | No       | Token used to read private upstream template releases. If omitted, the bot token is reused.                    |
 
 The bot token should have access to the subscriber repository with permissions for contents, pull requests, issues, and repository variable writes.
 
 ### 4. Publish a template migration
 
-After a template PR is merged into `main`, run the **Publish template migration** workflow in the template repository.
+After a template PR is merged into the template repository default branch, run the **Publish template migration** workflow in the template repository.
 
 Provide the merged PR number:
 
@@ -77,7 +109,7 @@ Provide the merged PR number:
 pr_number: 123
 ```
 
-The workflow validates that the PR belongs to the template repo, targets `main`, and is merged. It then creates a GitHub Release with a `template-migration/` tag and uploads `migration-bundle.json`.
+The workflow validates that the PR belongs to the template repo, targets the template repository default branch, and is merged. It then creates a GitHub Release with a `template-migration/` tag and uploads `migration-bundle.json`.
 
 ### 5. Let subscribers discover the migration
 
@@ -130,18 +162,18 @@ For `approve` and `revise`, the workflow checks out the migration branch, gather
 
 Subscriber repositories track handled migrations using GitHub Actions repository variables:
 
-| Variable | Purpose |
-| --- | --- |
-| `TEMPLATE_SYNC_LAST_HANDLED_MIGRATION_ID` | Newest migration that opened a PR, was applied, or was declined. |
-| `TEMPLATE_SYNC_LAST_APPLIED_MIGRATION_ID` | Newest migration successfully applied through an approve or revise command. |
-| `TEMPLATE_SYNC_LAST_DECLINED_MIGRATION_ID` | Newest migration declined by a maintainer. |
-| `TEMPLATE_SYNC_UPSTREAM_REPO` | Optional subscriber-specific override for the upstream template repository. |
+| Variable                                   | Purpose                                                                     |
+| ------------------------------------------ | --------------------------------------------------------------------------- |
+| `TEMPLATE_SYNC_LAST_HANDLED_MIGRATION_ID`  | Newest migration that opened a PR, was applied, or was declined.            |
+| `TEMPLATE_SYNC_LAST_APPLIED_MIGRATION_ID`  | Newest migration successfully applied through an approve or revise command. |
+| `TEMPLATE_SYNC_LAST_DECLINED_MIGRATION_ID` | Newest migration declined by a maintainer.                                  |
+| `TEMPLATE_SYNC_UPSTREAM_REPO`              | Optional subscriber-specific override for the upstream template repository. |
 
 The workflows create or update these variables automatically. Set `TEMPLATE_SYNC_UPSTREAM_REPO` manually only when a subscriber should follow a different template repository than the workflow default.
 
 ## Operational Notes
 
-- Only merged PRs into `main` can be published as template migrations.
+- Only merged PRs into the template repository default branch can be published as template migrations.
 - Subscriber sync only considers the newest template migration release.
 - A subscriber repository can have only one open `template-migration` PR at a time.
 - Manual runs of `template-sync.yml` force a recheck of the newest migration, but still do not open a duplicate if an open migration PR already exists.
@@ -152,6 +184,12 @@ The workflows create or update these variables automatically. Set `TEMPLATE_SYNC
 ## Development
 
 This project requires Node.js 20 or newer.
+
+Check what would be included in the npm package:
+
+```sh
+npm run pack:check
+```
 
 Run tests:
 

@@ -13,7 +13,7 @@ export function parseTemplateSyncCommand(commentBody) {
   }
   return {
     action: match[1],
-    instructions: rest.join("\n").trim()
+    instructions: rest.join("\n").trim(),
   };
 }
 

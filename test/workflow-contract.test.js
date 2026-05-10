@@ -130,11 +130,16 @@ test("release workflow uses changesets and can deploy docs manually", () => {
   assert.doesNotMatch(workflow, /^\s*push:/m);
   assert.match(workflow, /contents: write/);
   assert.match(workflow, /pull-requests: write/);
+  assert.match(workflow, /id-token: write/);
   assert.match(workflow, /uses: changesets\/action@v1/);
   assert.match(workflow, /publish: npm run release/);
   assert.match(workflow, /title: "chore\(release\): version packages"/);
   assert.match(workflow, /commit: "chore\(release\): version packages"/);
-  assert.match(workflow, /NPM_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/);
+  assert.match(workflow, /node-version: "24"/);
+  assert.match(workflow, /registry-url: "https:\/\/registry\.npmjs\.org"/);
+  assert.match(workflow, /NPM_CONFIG_PROVENANCE: true/);
+  assert.doesNotMatch(workflow, /NPM_TOKEN/);
+  assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN/);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /deploy_docs:/);
   assert.match(workflow, /npm run docs:build/);
@@ -145,6 +150,7 @@ test("release workflow uses changesets and can deploy docs manually", () => {
   assert.equal(packageJson.scripts.changeset, "changeset");
   assert.equal(packageJson.scripts.version, "changeset version");
   assert.equal(packageJson.scripts.release, "changeset publish");
+  assert.equal(packageJson.repository.url, "git+https://github.com/CorieW/template-subscriber-migration-system.git");
   assert.equal(changesetConfig.access, "public");
 });
 

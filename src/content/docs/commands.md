@@ -13,10 +13,14 @@ npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- publish-template-migration 
 
 Environment:
 
-| Name                | Required | Description                                         |
-| ------------------- | -------- | --------------------------------------------------- |
-| `GITHUB_REPOSITORY` | Yes      | Template repository in `OWNER/REPO` form.           |
-| `GITHUB_TOKEN`      | Yes      | Token with release write access and PR read access. |
+| Name                                  | Required                                             | Description                                                                                      |
+| ------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `GITHUB_REPOSITORY`                   | Yes                                                  | Template repository in `OWNER/REPO` form.                                                        |
+| `GITHUB_TOKEN`                        | Yes                                                  | Token with release write access and PR read access.                                              |
+| `TEMPLATE_SYNC_GENERATE_SUMMARY`      | No                                                   | Set to `true`, `1`, `yes`, or `on` to generate one reusable migration summary during publishing. |
+| `OPENAI_API_KEY`                      | Yes when `TEMPLATE_SYNC_GENERATE_SUMMARY` is enabled | API key for summary generation.                                                                  |
+| `OPENAI_MODEL`                        | No                                                   | Summary model. Defaults to `gpt-5.5`.                                                            |
+| `TEMPLATE_SYNC_SUMMARY_MOCK_RESPONSE` | No                                                   | JSON summary response used for local or test runs instead of OpenAI.                             |
 
 ## `subscriber-template-sync`
 

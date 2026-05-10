@@ -3,8 +3,17 @@ import fs from "node:fs";
 import { GitHubApi } from "../src/template-sync/github-api.js";
 import { createMigrationBundle } from "../src/template-sync/bundle.js";
 import { MIGRATION_BUNDLE_ASSET_NAME } from "../src/template-sync/constants.js";
+import {
+  buildMigrationSummaryPrompt,
+  callOpenAiForMigrationSummary,
+  validateMigrationSummaryOutput,
+} from "../src/template-sync/openai.js";
 import { renderReleaseBody } from "../src/template-sync/releases.js";
 import { parseRepo, requireEnv } from "../src/template-sync/utils.js";
+
+function envFlagEnabled(value) {
+  return ["1", "true", "yes", "on"].includes(String(value || "").toLowerCase());
+}
 
 async function main() {
   const repoFullName = requireEnv("GITHUB_REPOSITORY");
@@ -26,13 +35,26 @@ async function main() {
     raw: "text",
   });
 
-  const bundle = createMigrationBundle({
+  let bundle = createMigrationBundle({
     templateRepoFullName: repoFullName,
     templateBranch,
     pullRequest,
     files,
     unifiedDiff,
   });
+  if (envFlagEnabled(process.env.TEMPLATE_SYNC_GENERATE_SUMMARY)) {
+    const summaryResult = process.env.TEMPLATE_SYNC_SUMMARY_MOCK_RESPONSE
+      ? validateMigrationSummaryOutput(JSON.parse(process.env.TEMPLATE_SYNC_SUMMARY_MOCK_RESPONSE))
+      : await callOpenAiForMigrationSummary({
+          apiKey: requireEnv("OPENAI_API_KEY"),
+          model: process.env.OPENAI_MODEL || "gpt-5.5",
+          prompt: buildMigrationSummaryPrompt({ bundle }),
+        });
+    bundle = {
+      ...bundle,
+      generatedSummary: summaryResult.summary,
+    };
+  }
   const bundleJson = `${JSON.stringify(bundle, null, 2)}\n`;
   fs.writeFileSync(MIGRATION_BUNDLE_ASSET_NAME, bundleJson, "utf8");
 

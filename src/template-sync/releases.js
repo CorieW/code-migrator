@@ -20,7 +20,8 @@ export function selectNewestMigrationRelease(releases) {
 }
 
 export function renderReleaseBody(bundle) {
-  return `${bundle.sourceSummary}
+  const summary = bundle.generatedSummary || bundle.sourceSummary;
+  return `${summary}
 
 Source PR: ${bundle.sourcePullRequest.url}
 

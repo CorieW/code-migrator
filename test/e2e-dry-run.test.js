@@ -7,7 +7,11 @@ import { createMigrationBundle } from "../src/template-sync/bundle.js";
 import { selectNewestMigrationRelease } from "../src/template-sync/releases.js";
 import { renderMigrationPrBody } from "../src/template-sync/render.js";
 import { parseTemplateSyncCommand } from "../src/template-sync/commands.js";
-import { buildGenerationPrompt } from "../src/template-sync/openai.js";
+import {
+  buildGenerationPrompt,
+  buildMigrationSummaryPrompt,
+  validateMigrationSummaryOutput,
+} from "../src/template-sync/openai.js";
 import { applyGenerationPlan, validateGenerationPlan } from "../src/template-sync/generation-contract.js";
 
 function pr(number, publishedAt) {
@@ -54,6 +58,13 @@ test("dry-run publish subscribe approve revise lifecycle with mocked generation"
 
   assert.equal(newest.tag_name, newerBundle.migration.id);
   assert.match(renderMigrationPrBody(newerBundle), /No code has been generated yet/);
+
+  const summaryPrompt = buildMigrationSummaryPrompt({ bundle: newerBundle });
+  assert.equal(summaryPrompt.migrationBundle.migration.id, newerBundle.migration.id);
+  const summary = validateMigrationSummaryOutput({ summary: "Updates the app entrypoint for generated subscribers." });
+  const summarizedBundle = { ...newerBundle, generatedSummary: summary.summary };
+  assert.match(renderMigrationPrBody(summarizedBundle), /Template Change Summary/);
+  assert.match(renderMigrationPrBody(summarizedBundle), /Updates the app entrypoint/);
 
   const approve = parseTemplateSyncCommand("/template-sync approve\nKeep the subscriber theme.");
   const approvePrompt = buildGenerationPrompt({

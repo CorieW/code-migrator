@@ -42,6 +42,7 @@ test("builds a stable migration bundle from merged PR data", () => {
   assert.equal(bundle.migration.id, "template-migration/pr-42-0123456789ab");
   assert.equal(bundle.templateRepository.branch, "main");
   assert.equal(bundle.sourcePullRequest.mergedInto, "main");
+  assert.equal(bundle.generatedSummary, "");
   assert.deepEqual(
     bundle.changedFiles.map((file) => file.filename),
     ["package.json", "src/app.ts"],
@@ -62,6 +63,19 @@ test("builds migration bundles for non-main template default branches", () => {
 
   assert.equal(bundle.templateRepository.branch, "trunk");
   assert.equal(bundle.sourcePullRequest.mergedInto, "trunk");
+  assert.equal(validateMigrationBundle(bundle), bundle);
+});
+
+test("stores one generated summary in migration bundles", () => {
+  const bundle = createMigrationBundle({
+    templateRepoFullName: "acme/template",
+    pullRequest: mergedPullRequest(),
+    files: [],
+    unifiedDiff: "",
+    generatedSummary: "Adds stricter lint rules for generated subscribers.",
+  });
+
+  assert.equal(bundle.generatedSummary, "Adds stricter lint rules for generated subscribers.");
   assert.equal(validateMigrationBundle(bundle), bundle);
 });
 

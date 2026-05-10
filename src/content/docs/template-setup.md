@@ -14,6 +14,13 @@ env:
   TEMPLATE_SYNC_PACKAGE: template-subscriber-migration-system@0.1.0
 ```
 
+Optional summary model:
+
+```yaml
+env:
+  OPENAI_MODEL: gpt-5.5
+```
+
 Required permissions:
 
 ```yaml
@@ -30,7 +37,10 @@ Example input:
 
 ```yaml
 pr_number: 123
+generate_summary: false
 ```
+
+Set `generate_summary` to `true` when you want OpenAI to create one basic template-change summary during publishing. The summary is stored in `migration-bundle.json` and reused by every subscriber PR, so it is not regenerated per subscriber.
 
 The command validates that the PR:
 
@@ -47,6 +57,7 @@ Each migration bundle includes:
 
 - template repository name and branch,
 - source PR title, body, labels, URL, merge SHA, and merge time,
+- optional generated template-change summary,
 - normalized changed file list,
 - unified PR patch.
 

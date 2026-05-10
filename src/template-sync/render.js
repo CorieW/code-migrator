@@ -9,6 +9,17 @@ function renderFileList(files) {
   return files.map((file) => `- \`${file.filename}\` (${file.status})`).join("\n");
 }
 
+function renderGeneratedSummary(bundle) {
+  if (!bundle.generatedSummary) {
+    return "";
+  }
+  return `
+## Template Change Summary
+
+${bundle.generatedSummary}
+`;
+}
+
 function renderCodeFenceText(value) {
   const text = String(value || "Unknown error")
     .replaceAll("```", "` ` `")
@@ -29,6 +40,7 @@ export function renderMigrationPrBody(bundle) {
 ## Template Migration
 
 ${bundle.sourceSummary}
+${renderGeneratedSummary(bundle)}
 
 Source PR: ${bundle.sourcePullRequest.url}
 

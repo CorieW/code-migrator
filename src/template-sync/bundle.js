@@ -59,6 +59,7 @@ export function createMigrationBundle({
   pullRequest,
   files,
   unifiedDiff,
+  generatedSummary = "",
 }) {
   assertPublishablePullRequest(pullRequest, templateRepoFullName, templateBranch);
   const migrationId = deriveMigrationIdFromPullRequest(pullRequest);
@@ -82,6 +83,7 @@ export function createMigrationBundle({
       mergedInto: templateBranch,
     },
     sourceSummary: subscriberSummaryFromPullRequest(pullRequest),
+    generatedSummary: String(generatedSummary || "").trim(),
     changedFiles: normalizeChangedFiles(files || []),
     unifiedDiff: String(unifiedDiff || ""),
   };
@@ -112,6 +114,9 @@ export function validateMigrationBundle(bundle) {
   }
   if (typeof bundle?.unifiedDiff !== "string") {
     errors.push("unifiedDiff must be a string");
+  }
+  if (bundle?.generatedSummary !== undefined && typeof bundle.generatedSummary !== "string") {
+    errors.push("generatedSummary must be a string when present");
   }
   if (errors.length > 0) {
     throw new Error(`Invalid migration bundle: ${errors.join("; ")}`);

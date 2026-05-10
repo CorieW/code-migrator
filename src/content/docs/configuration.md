@@ -12,14 +12,16 @@ Set these in repositories that publish template migrations with `.github/workflo
 | Name                    | Required | Description                                                                            |
 | ----------------------- | -------- | -------------------------------------------------------------------------------------- |
 | `TEMPLATE_SYNC_PACKAGE` | Yes      | Package spec installed by `npm exec`, such as an npm version, git URL, or tarball URL. |
+| `OPENAI_MODEL`          | No       | Model used for optional migration summary generation. Defaults to `gpt-5.5`.           |
 
 ### Secrets
 
-| Name           | Required | Description                                                                                   |
-| -------------- | -------- | --------------------------------------------------------------------------------------------- |
-| `GITHUB_TOKEN` | Built in | GitHub Actions token used to read PRs and publish release assets. No manual secret is needed. |
+| Name             | Required                             | Description                                                                                   |
+| ---------------- | ------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_TOKEN`   | Built in                             | GitHub Actions token used to read PRs and publish release assets. No manual secret is needed. |
+| `OPENAI_API_KEY` | Only when `generate_summary` is true | OpenAI API key for one-time migration summary generation.                                     |
 
-The template repository does not need `OPENAI_API_KEY`.
+The template repository does not need `OPENAI_API_KEY` unless optional summary generation is enabled.
 
 ## Subscriber Repositories
 

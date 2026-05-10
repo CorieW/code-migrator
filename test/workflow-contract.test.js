@@ -15,16 +15,22 @@ test("publish workflow is manual only and publishes PR-scoped release assets", (
   const constants = read("src/template-sync/constants.js");
 
   assert.match(workflow, /workflow_dispatch/);
+  assert.match(workflow, /generate_summary:/);
   assert.doesNotMatch(workflow, /^\s*push:/m);
   assert.doesNotMatch(workflow, /^\s*pull_request:/m);
   assert.match(workflow, /contents: write/);
   assert.match(workflow, /TEMPLATE_SYNC_PACKAGE:/);
+  assert.match(workflow, /TEMPLATE_SYNC_GENERATE_SUMMARY/);
+  assert.match(workflow, /OPENAI_API_KEY/);
+  assert.match(workflow, /OPENAI_MODEL: gpt-5\.5/);
   assert.match(workflow, /Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec/);
   assert.doesNotMatch(workflow, /@latest/);
   assert.match(workflow, /npm exec --yes --package "\$TEMPLATE_SYNC_PACKAGE" -- publish-template-migration/);
   assert.match(script, /repository\.default_branch/);
   assert.match(script, /templateBranch/);
   assert.match(script, /createMigrationBundle/);
+  assert.match(script, /callOpenAiForMigrationSummary/);
+  assert.match(script, /TEMPLATE_SYNC_GENERATE_SUMMARY/);
   assert.match(script, /releases/);
   assert.match(script, /target_commitish: pullRequest\.merge_commit_sha/);
   assert.match(constants, /migration-bundle\.json/);

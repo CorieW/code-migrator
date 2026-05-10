@@ -7,6 +7,11 @@ on:
         description: Pull request number merged into the template default branch
         required: true
         type: number
+      generate_summary:
+        description: Generate one reusable AI summary for this migration
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -15,6 +20,7 @@ permissions:
 env:
   # Set this to a published npm package, git URL, or tarball package spec.
   TEMPLATE_SYNC_PACKAGE: ""
+  OPENAI_MODEL: gpt-5.5
 
 jobs:
   publish:
@@ -30,6 +36,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          TEMPLATE_SYNC_GENERATE_SUMMARY: ${{ inputs.generate_summary }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ env.OPENAI_MODEL }}
         run: |
           if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
             echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."

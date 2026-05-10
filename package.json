@@ -2,6 +2,10 @@
   "name": "template-subscriber-migration-system",
   "version": "0.1.0",
   "description": "GitHub Actions helpers for publishing template migration bundles and applying them in subscriber repositories.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CorieW/template-subscriber-migration-system.git"
+  },
   "license": "UNLICENSED",
   "type": "module",
   "bin": {

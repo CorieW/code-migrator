@@ -6,7 +6,7 @@
     "type": "git",
     "url": "git+https://github.com/CorieW/template-subscriber-migration-system.git"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "publish-template-migration": "./scripts/publish-template-migration.mjs",

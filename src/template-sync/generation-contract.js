@@ -18,11 +18,11 @@ export const GENERATION_RESPONSE_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["action", "path"],
+        required: ["action", "path", "content"],
         properties: {
           action: { type: "string", enum: ["create", "update", "delete"] },
           path: { type: "string" },
-          content: { type: "string" },
+          content: { type: ["string", "null"] },
         },
       },
     },
@@ -59,8 +59,13 @@ export function validateGenerationPlan(plan) {
       if (operation?.action !== "delete" && typeof operation?.content !== "string") {
         errors.push(`operations[${index}].content must be a string for create/update`);
       }
-      if (operation?.action === "delete" && "content" in operation && operation.content !== undefined) {
-        errors.push(`operations[${index}].content must be omitted for delete`);
+      if (
+        operation?.action === "delete" &&
+        "content" in operation &&
+        operation.content !== undefined &&
+        operation.content !== null
+      ) {
+        errors.push(`operations[${index}].content must be null or omitted for delete`);
       }
     });
   }
@@ -77,7 +82,7 @@ export function validateGenerationPlan(plan) {
     operations: plan.operations.map((operation) => ({
       action: operation.action,
       path: safeRelativePath(operation.path),
-      content: operation.content,
+      content: operation.content ?? null,
     })),
   };
 }

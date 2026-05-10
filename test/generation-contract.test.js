@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   applyGenerationPlan,
+  GENERATION_RESPONSE_SCHEMA,
   parseAndValidateGenerationPlan,
   validateGenerationPlan,
 } from "../src/template-sync/generation-contract.js";
@@ -37,6 +38,13 @@ test("validates and applies create, update, and delete operations", () => {
   assert.equal(fs.existsSync(path.join(root, "remove.txt")), false);
 });
 
+test("generation schema is valid for strict OpenAI structured outputs", () => {
+  const operationSchema = GENERATION_RESPONSE_SCHEMA.properties.operations.items;
+
+  assert.deepEqual(operationSchema.required, Object.keys(operationSchema.properties));
+  assert.deepEqual(operationSchema.properties.content.type, ["string", "null"]);
+});
+
 test("rejects malformed model output", () => {
   assert.throws(
     () =>
@@ -45,6 +53,14 @@ test("rejects malformed model output", () => {
         operations: [{ action: "update", path: "../escape.txt", content: "no" }],
       }),
     /Malformed generation output/,
+  );
+  assert.throws(
+    () =>
+      validateGenerationPlan({
+        summary: "bad",
+        operations: [{ action: "delete", path: "remove.txt", content: "unexpected" }],
+      }),
+    /content must be null or omitted/,
   );
   assert.throws(() => parseAndValidateGenerationPlan("not json"), /Unexpected token/);
 });

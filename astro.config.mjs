@@ -35,7 +35,7 @@ export default defineConfig({
         },
         {
           label: "Reference",
-          items: [{ slug: "configuration" }, { slug: "commands" }, { slug: "operations" }],
+          items: [{ slug: "configuration" }, { slug: "commands" }],
         },
       ],
     }),

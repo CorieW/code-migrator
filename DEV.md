@@ -1,7 +1,6 @@
----
-title: Operations
-description: Release, validation, and documentation workflows for maintainers.
----
+# Development Notes
+
+Internal maintainer information lives here instead of in the published product docs.
 
 ## Local Checks
 
@@ -32,12 +31,12 @@ The CI workflow runs on pull requests and pushes to `master`.
 
 It checks:
 
-- Prettier formatting,
-- syntax and ESLint,
-- Node tests,
-- Knip unused-file and dependency analysis.
+- Prettier formatting
+- syntax and ESLint
+- Node tests
+- Knip unused-file and dependency analysis
 
-## Release
+## Package Release
 
 The release workflow uses Changesets.
 
@@ -52,6 +51,7 @@ Run the release workflow manually to let Changesets create a release PR or publi
 ## Documentation Deploys
 
 Docs deploy to GitHub Pages from `.github/workflows/deploy-docs.yml`.
+
 If GitHub Pages is not enabled for the repository, the deploy workflow skips deployment with a warning.
 
 The release workflow also has a manual `deploy_docs` input. Select it when you want to publish docs during the same release workflow run.

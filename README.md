@@ -6,7 +6,7 @@ Use this when one repository acts as an upstream template and many downstream re
 
 ## Documentation
 
-The docs are the source of truth for setup, configuration, and operations:
+The docs are the source of truth for setup and configuration:
 
 - [Getting started](src/content/docs/getting-started.md)
 - [Template setup](src/content/docs/template-setup.md)
@@ -14,7 +14,8 @@ The docs are the source of truth for setup, configuration, and operations:
 - [Approve, revise, decline](src/content/docs/approve-revise-decline.md)
 - [Configuration](src/content/docs/configuration.md)
 - [Commands](src/content/docs/commands.md)
-- [Operations](src/content/docs/operations.md)
+
+Internal development, release, and docs deployment notes live in [DEV.md](DEV.md).
 
 ## What Ships
 

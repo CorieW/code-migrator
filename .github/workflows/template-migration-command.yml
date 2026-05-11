@@ -29,11 +29,21 @@ jobs:
         with:
           token: ${{ secrets.TEMPLATE_SYNC_BOT_TOKEN }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: "20"
+
+      - name: Install template sync package
+        run: |
+          if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
+            echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."
+            exit 1
+          fi
+          npm install --global --prefix "$RUNNER_TEMP/template-sync" --ignore-scripts "$TEMPLATE_SYNC_PACKAGE"
+          echo "$RUNNER_TEMP/template-sync/bin" >> "$GITHUB_PATH"
 
       - name: Handle template sync command
         env:
@@ -44,9 +54,4 @@ jobs:
           TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO: ${{ env.TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ env.OPENAI_MODEL }}
-        run: |
-          if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
-            echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."
-            exit 1
-          fi
-          npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- handle-template-sync-command
+        run: handle-template-sync-command

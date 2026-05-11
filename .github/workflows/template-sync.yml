@@ -27,6 +27,15 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install template sync package
+        run: |
+          if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
+            echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."
+            exit 1
+          fi
+          npm install --global --prefix "$RUNNER_TEMP/template-sync" --ignore-scripts "$TEMPLATE_SYNC_PACKAGE"
+          echo "$RUNNER_TEMP/template-sync/bin" >> "$GITHUB_PATH"
+
       - name: Discover newest template migration
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -34,9 +43,4 @@ jobs:
           TEMPLATE_SYNC_BOT_TOKEN: ${{ secrets.TEMPLATE_SYNC_BOT_TOKEN }}
           TEMPLATE_SYNC_UPSTREAM_READ_TOKEN: ${{ secrets.TEMPLATE_SYNC_UPSTREAM_READ_TOKEN }}
           TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO: ${{ env.TEMPLATE_SYNC_DEFAULT_UPSTREAM_REPO }}
-        run: |
-          if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
-            echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."
-            exit 1
-          fi
-          npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- subscriber-template-sync
+        run: subscriber-template-sync

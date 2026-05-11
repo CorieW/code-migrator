@@ -40,10 +40,13 @@ env:
   TEMPLATE_SYNC_PACKAGE: template-subscriber-migration-system@latest
 ```
 
-Run a binary directly:
+Install a workflow binary without package lifecycle scripts, then run it:
 
 ```sh
-npm exec --yes --package template-subscriber-migration-system@latest -- subscriber-template-sync
+prefix="$(mktemp -d)"
+npm install --global --prefix "$prefix" --ignore-scripts template-subscriber-migration-system@latest
+PATH="$prefix/bin:$PATH"
+subscriber-template-sync
 ```
 
 Or install locally:

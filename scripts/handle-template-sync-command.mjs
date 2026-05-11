@@ -14,7 +14,7 @@ import { collectPriorGenerationSummaries, collectRepoContext } from "../src/temp
 import { scoreDrift } from "../src/template-sync/drift.js";
 import { buildGenerationPrompt, callOpenAiForGeneration } from "../src/template-sync/openai.js";
 import { applyGenerationPlan, validateGenerationPlan } from "../src/template-sync/generation-contract.js";
-import { refreshDependencies, runValidation } from "../src/template-sync/validation.js";
+import { skippedPrivilegedValidationResults } from "../src/template-sync/validation.js";
 import {
   renderCommandFailureComment,
   renderDeclineComment,
@@ -58,6 +58,32 @@ function runGit(args, options = {}) {
     ...options,
   });
   return typeof output === "string" ? output.trim() : "";
+}
+
+function repositoryHttpsUrl(repoFullName) {
+  return `https://github.com/${repoFullName}.git`;
+}
+
+function gitAuthEnvironment(token, env = process.env) {
+  if (!token) {
+    return env;
+  }
+  const authHeader = Buffer.from(`x-access-token:${token}`).toString("base64");
+  return {
+    ...env,
+    GIT_CONFIG_COUNT: "1",
+    GIT_CONFIG_KEY_0: "http.https://github.com/.extraheader",
+    GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${authHeader}`,
+  };
+}
+
+function runGitWithAuth(args, options) {
+  const gitOptions = { ...options };
+  delete gitOptions.token;
+  return runGit(args, {
+    ...gitOptions,
+    env: gitAuthEnvironment(options.token, options.env),
+  });
 }
 
 function readEvent() {
@@ -119,10 +145,12 @@ function issueHasMigrationLabel(issue) {
 function checkoutPullRequestBranch({ repoFullName, pullRequest, botToken }) {
   runGit(["config", "user.name", "template-sync-bot"]);
   runGit(["config", "user.email", "template-sync-bot@users.noreply.github.com"]);
-  if (botToken) {
-    runGit(["remote", "set-url", "origin", `https://x-access-token:${botToken}@github.com/${repoFullName}.git`]);
-  }
-  runGit(["fetch", "origin", `${pullRequest.head.ref}:template-sync-worktree`], { stdio: "inherit" });
+  const repoUrl = repositoryHttpsUrl(repoFullName);
+  runGit(["remote", "set-url", "origin", repoUrl]);
+  runGitWithAuth(["fetch", repoUrl, `${pullRequest.head.ref}:template-sync-worktree`], {
+    token: botToken,
+    stdio: "inherit",
+  });
   runGit(["checkout", "template-sync-worktree"], { stdio: "inherit" });
 }
 
@@ -131,7 +159,7 @@ function gitChangedFiles() {
   return output ? output.split("\n").filter(Boolean) : [];
 }
 
-function commitAndPushIfNeeded({ pullRequest, migrationId, mode }) {
+function commitAndPushIfNeeded({ repoFullName, pullRequest, botToken, migrationId, mode }) {
   const changedFiles = gitChangedFiles();
   if (changedFiles.length === 0) {
     return [];
@@ -140,7 +168,10 @@ function commitAndPushIfNeeded({ pullRequest, migrationId, mode }) {
   runGit(["commit", "-m", `${mode === "revise" ? "Revise" : "Apply"} template migration ${migrationId}`], {
     stdio: "inherit",
   });
-  runGit(["push", "origin", `HEAD:${pullRequest.head.ref}`], { stdio: "inherit" });
+  runGitWithAuth(["push", repositoryHttpsUrl(repoFullName), `HEAD:${pullRequest.head.ref}`], {
+    token: botToken,
+    stdio: "inherit",
+  });
   return changedFiles;
 }
 
@@ -232,34 +263,11 @@ async function handleTemplateSyncCommand({ event, command, api, repoFullName, bo
         prompt,
       });
 
-  const plannedChangedFiles = applyGenerationPlan(generationPlan, { root });
-  const dependencyResults = await refreshDependencies({ root, changedFiles: plannedChangedFiles });
-  const validationResults = [...dependencyResults, ...(await runValidation({ root }))];
+  applyGenerationPlan(generationPlan, { root });
+  const validationResults = skippedPrivilegedValidationResults();
   const changedFiles = uniqueSorted(gitChangedFiles());
-  const failedValidationResults = validationResults.filter((result) => result.exitCode !== 0);
 
-  if (failedValidationResults.length > 0) {
-    await addIssueCommentAndThrow(
-      api,
-      repoFullName,
-      issueNumber,
-      renderGenerationComment({
-        mode: command.action,
-        instructions: command.instructions,
-        changedFiles,
-        validationResults,
-        driftWarnings: [...drift.warnings, ...(generationPlan.driftWarnings || [])],
-        summary: `${generationPlan.summary}\n\nValidation failed; subscriber state was not marked applied.`,
-      }),
-      new Error(
-        `Validation failed for ${migrationId}: ${failedValidationResults
-          .map((result) => `${result.command} exited ${result.exitCode}`)
-          .join("; ")}`,
-      ),
-    );
-  }
-
-  commitAndPushIfNeeded({ pullRequest, migrationId, mode: command.action });
+  commitAndPushIfNeeded({ repoFullName, pullRequest, botToken, migrationId, mode: command.action });
   await writeSubscriberStateTransition(api, repoFullName, "applied", migrationId);
   await addIssueComment(
     api,

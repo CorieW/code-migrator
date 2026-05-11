@@ -29,11 +29,10 @@ Use it when repositories start from a shared template, but later drift because e
 18. OpenAI returns JSON file operations: `create`, `update`, or `delete`.
 19. The tool validates the JSON and safe paths.
 20. The tool writes the generated file changes.
-21. The tool refreshes the lockfile if package dependencies changed.
-22. The tool runs `lint`, `typecheck`, and `test` scripts if the subscriber repository has them.
-23. If validation fails, the tool comments with the failure and does not mark the migration applied.
-24. If validation passes, the tool commits, pushes, and comments with a summary.
-25. The tool marks the migration applied in repository variables.
+21. The tool skips lockfile refresh and subscriber package scripts in the privileged command workflow.
+22. The tool commits, pushes, and comments with a summary.
+23. The tool marks the migration applied in repository variables.
+24. Normal PR CI or local review validates the generated branch without exposing template sync secrets to generated code.
 
 ## Package Commands
 

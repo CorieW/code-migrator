@@ -55,14 +55,8 @@ Close the migration PR and mark the migration declined:
 
 ## Validation Behavior
 
-The command workflow applies generated file operations locally, refreshes lockfiles when `package.json` changes, runs available validation scripts, then commits and pushes only if validation passes.
+The command workflow applies generated file operations locally, commits, pushes, and comments with a summary. It does not refresh lockfiles or run subscriber `package.json` scripts because generated repository code is untrusted while `OPENAI_API_KEY` and GitHub tokens are present.
 
 If a recognized command cannot complete, the workflow comments on the PR with the failure message. This includes missing configuration such as `OPENAI_API_KEY`, upstream release lookup failures, OpenAI API failures, malformed generation output, checkout failures, and push failures. Errors that happen before the workflow can read the issue event or bot token still appear only in the GitHub Actions logs.
 
-Validation scripts run in this order when present:
-
-1. `lint`
-2. `typecheck`
-3. `test`
-
-The package manager is detected from `packageManager`, `pnpm-lock.yaml`, `yarn.lock`, or npm fallback.
+Run normal PR CI or local checks against the generated branch after the bot pushes it. Keep those PR checks free of repository secrets when they can execute generated code.

@@ -8,7 +8,7 @@ description: Package binary command reference with examples.
 Publishes a migration bundle release from a merged template PR.
 
 ```sh
-npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- publish-template-migration 123
+publish-template-migration 123
 ```
 
 Environment:
@@ -27,7 +27,7 @@ Environment:
 Discovers the newest migration and opens a draft PR in a subscriber repository.
 
 ```sh
-npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- subscriber-template-sync
+subscriber-template-sync
 ```
 
 Environment:
@@ -44,7 +44,7 @@ Environment:
 Handles `/template-sync` comments on migration PRs.
 
 ```sh
-npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- handle-template-sync-command
+handle-template-sync-command
 ```
 
 Environment:

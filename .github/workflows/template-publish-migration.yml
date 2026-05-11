@@ -31,6 +31,15 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install template sync package
+        run: |
+          if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
+            echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."
+            exit 1
+          fi
+          npm install --global --prefix "$RUNNER_TEMP/template-sync" --ignore-scripts "$TEMPLATE_SYNC_PACKAGE"
+          echo "$RUNNER_TEMP/template-sync/bin" >> "$GITHUB_PATH"
+
       - name: Publish migration bundle release
         id: publish
         env:
@@ -39,9 +48,4 @@ jobs:
           TEMPLATE_SYNC_GENERATE_SUMMARY: ${{ inputs.generate_summary }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ env.OPENAI_MODEL }}
-        run: |
-          if [ -z "$TEMPLATE_SYNC_PACKAGE" ]; then
-            echo "::error::Set TEMPLATE_SYNC_PACKAGE to a published npm package, git URL, or tarball package spec."
-            exit 1
-          fi
-          npm exec --yes --package "$TEMPLATE_SYNC_PACKAGE" -- publish-template-migration "${{ inputs.pr_number }}"
+        run: publish-template-migration "${{ inputs.pr_number }}"

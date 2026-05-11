@@ -61,6 +61,14 @@ ${renderFileList(bundle.changedFiles)}
 No code has been generated yet. This draft PR is waiting for an admin decision.`;
 }
 
+function renderValidationResult(result) {
+  if (result.status === "skipped") {
+    const reason = result.stderr ? ` (${result.stderr})` : "";
+    return `- \`${result.command}\`: skipped${reason}`;
+  }
+  return `- \`${result.command}\`: ${result.exitCode === 0 ? "passed" : `failed (${result.exitCode})`}`;
+}
+
 export function renderGenerationComment({
   mode,
   instructions,
@@ -75,9 +83,7 @@ export function renderGenerationComment({
     ? changedFiles.map((file) => `- \`${file}\``).join("\n")
     : "- No file changes were produced.";
   const validation = validationResults?.length
-    ? validationResults
-        .map((result) => `- \`${result.command}\`: ${result.exitCode === 0 ? "passed" : `failed (${result.exitCode})`}`)
-        .join("\n")
+    ? validationResults.map((result) => renderValidationResult(result)).join("\n")
     : "- No validation commands were available.";
   const drift = driftWarnings?.length
     ? driftWarnings.map((warning) => `- ${warning}`).join("\n")

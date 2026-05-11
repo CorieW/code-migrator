@@ -2,13 +2,21 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
+const SENSITIVE_ENV_NAME_PATTERN = /(?:^|_)(?:TOKEN|KEY|SECRET|PASSWORD|CREDENTIAL|AUTH)(?:_|$)/i;
+
+export function isSensitiveEnvironmentName(name) {
+  return SENSITIVE_ENV_NAME_PATTERN.test(name);
+}
+
 export function commandEnvironment(command, env = process.env) {
+  const sanitizedEnv = Object.fromEntries(Object.entries(env).filter(([name]) => !isSensitiveEnvironmentName(name)));
   if (command !== "corepack") {
-    return env;
+    return sanitizedEnv;
   }
   return {
-    ...env,
+    ...sanitizedEnv,
     COREPACK_ENABLE_AUTO_PIN: "0",
+    YARN_ENABLE_SCRIPTS: "0",
   };
 }
 
@@ -84,15 +92,27 @@ export async function refreshDependencies({ root, changedFiles }) {
     return [];
   }
   if (fs.existsSync(path.join(root, "pnpm-lock.yaml"))) {
-    return [await runCommand("corepack", ["pnpm", "install", "--lockfile-only"], { cwd: root })];
+    return [await runCommand("corepack", ["pnpm", "install", "--lockfile-only", "--ignore-scripts"], { cwd: root })];
   }
   if (fs.existsSync(path.join(root, "package-lock.json"))) {
-    return [await runCommand("npm", ["install", "--package-lock-only"], { cwd: root })];
+    return [await runCommand("npm", ["install", "--package-lock-only", "--ignore-scripts"], { cwd: root })];
   }
   if (fs.existsSync(path.join(root, "yarn.lock"))) {
     return [await runCommand("corepack", ["yarn", "install", "--mode", "update-lockfile"], { cwd: root })];
   }
   return [];
+}
+
+export function skippedPrivilegedValidationResults() {
+  return [
+    {
+      command: "dependency refresh and repository validation",
+      exitCode: 0,
+      stdout: "",
+      stderr: "Skipped because generated repository code is untrusted in the privileged command workflow.",
+      status: "skipped",
+    },
+  ];
 }
 
 export async function runValidation({ root }) {

@@ -5,7 +5,9 @@ description: Install the package, configure workflows, and run one migration.
 
 ## 1. Pick a Package Spec
 
-Each workflow runs package binaries through `npm exec`. The workflow examples default to the latest published package. Edit `TEMPLATE_SYNC_PACKAGE` when you want to pin a version, use a git URL, or use a tarball URL.
+Each workflow installs the package with `npm install --global --ignore-scripts` before any secret-bearing step runs, then calls the installed binary directly. The workflow examples default to the latest published package. Edit `TEMPLATE_SYNC_PACKAGE` when you want to pin a version, use a git URL, or use a tarball URL.
+
+Because package lifecycle scripts are disabled, custom git or tarball specs must include the built command files.
 
 Examples:
 
@@ -74,4 +76,4 @@ With guidance:
 Keep the subscriber theme and preserve the existing analytics adapter.
 ```
 
-If validation fails, the workflow comments with the failed commands and does not mark the migration applied.
+The command workflow does not run generated repository `package.json` scripts while `OPENAI_API_KEY` or GitHub tokens are present. Use normal PR CI or local review to validate the generated branch after it is pushed.

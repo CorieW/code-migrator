@@ -13,6 +13,7 @@ import { scoreDrift } from "../src/template-sync/drift.js";
 import {
   commandEnvironment,
   detectPackageManager,
+  isSensitiveEnvironmentName,
   packageScriptCommand,
   runValidation,
 } from "../src/template-sync/validation.js";
@@ -104,5 +105,16 @@ test("reports invalid root package json as validation failure", async () => {
 
 test("disables corepack package manager auto-pinning", () => {
   assert.equal(commandEnvironment("corepack", {}).COREPACK_ENABLE_AUTO_PIN, "0");
-  assert.deepEqual(commandEnvironment("npm", { EXISTING: "1" }), { EXISTING: "1" });
+  assert.equal(commandEnvironment("corepack", {}).YARN_ENABLE_SCRIPTS, "0");
+  assert.deepEqual(
+    commandEnvironment("npm", {
+      EXISTING: "1",
+      OPENAI_API_KEY: "secret",
+      TEMPLATE_SYNC_BOT_TOKEN: "token",
+      NPM_CONFIG_TOKEN: "npm-token",
+    }),
+    { EXISTING: "1" },
+  );
+  assert.equal(isSensitiveEnvironmentName("TEMPLATE_SYNC_UPSTREAM_READ_TOKEN"), true);
+  assert.equal(isSensitiveEnvironmentName("EXISTING"), false);
 });

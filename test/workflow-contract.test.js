@@ -25,7 +25,13 @@ test("publish workflow is manual only and publishes PR-scoped release assets", (
   assert.match(workflow, /OPENAI_MODEL: gpt-5\.5/);
   assert.match(workflow, /Change this to pin a version, git URL, or tarball package spec/);
   assert.match(workflow, /TEMPLATE_SYNC_PACKAGE: template-subscriber-migration-system@latest/);
-  assert.match(workflow, /npm exec --yes --package "\$TEMPLATE_SYNC_PACKAGE" -- publish-template-migration/);
+  assert.match(
+    workflow,
+    /npm install --global --prefix "\$RUNNER_TEMP\/template-sync" --ignore-scripts "\$TEMPLATE_SYNC_PACKAGE"/,
+  );
+  assert.match(workflow, /run: publish-template-migration "\$\{\{ inputs\.pr_number \}\}"/);
+  assert.doesNotMatch(workflow, /npm exec/);
+  assert.ok(workflow.indexOf("Install template sync package") < workflow.indexOf("OPENAI_API_KEY"));
   assert.match(script, /repository\.default_branch/);
   assert.match(script, /templateBranch/);
   assert.match(script, /createMigrationBundle/);
@@ -47,7 +53,13 @@ test("subscriber sync workflow polls newest release and opens at most one draft 
   assert.match(workflow, /TEMPLATE_SYNC_PACKAGE:/);
   assert.match(workflow, /Change this to pin a version, git URL, or tarball package spec/);
   assert.match(workflow, /TEMPLATE_SYNC_PACKAGE: template-subscriber-migration-system@latest/);
-  assert.match(workflow, /npm exec --yes --package "\$TEMPLATE_SYNC_PACKAGE" -- subscriber-template-sync/);
+  assert.match(
+    workflow,
+    /npm install --global --prefix "\$RUNNER_TEMP\/template-sync" --ignore-scripts "\$TEMPLATE_SYNC_PACKAGE"/,
+  );
+  assert.match(workflow, /run: subscriber-template-sync/);
+  assert.doesNotMatch(workflow, /npm exec/);
+  assert.ok(workflow.indexOf("Install template sync package") < workflow.indexOf("TEMPLATE_SYNC_BOT_TOKEN"));
   assert.match(script, /selectNewestMigrationRelease/);
   assert.match(script, /migrationMatchesHandledState/);
   assert.match(script, /findOpenMigrationPullRequest/);
@@ -59,21 +71,32 @@ test("subscriber sync workflow polls newest release and opens at most one draft 
 test("comment workflow supports approve revise decline with bot-token pushes", () => {
   const workflow = read(".github/workflows/template-migration-command.yml");
   const script = read("scripts/handle-template-sync-command.mjs");
+  const validation = read("src/template-sync/validation.js");
 
   assert.match(workflow, /issue_comment/);
   assert.match(workflow, /template-migration-\$\{\{ github\.event\.issue\.number \}\}/);
   assert.match(workflow, /token: \$\{\{ secrets\.TEMPLATE_SYNC_BOT_TOKEN \}\}/);
+  assert.match(workflow, /persist-credentials: false/);
   assert.match(workflow, /OPENAI_API_KEY/);
   assert.match(workflow, /TEMPLATE_SYNC_PACKAGE:/);
   assert.match(workflow, /Change this to pin a version, git URL, or tarball package spec/);
   assert.match(workflow, /TEMPLATE_SYNC_PACKAGE: template-subscriber-migration-system@latest/);
-  assert.match(workflow, /npm exec --yes --package "\$TEMPLATE_SYNC_PACKAGE" -- handle-template-sync-command/);
+  assert.match(
+    workflow,
+    /npm install --global --prefix "\$RUNNER_TEMP\/template-sync" --ignore-scripts "\$TEMPLATE_SYNC_PACKAGE"/,
+  );
+  assert.match(workflow, /run: handle-template-sync-command/);
+  assert.doesNotMatch(workflow, /npm exec/);
+  assert.ok(workflow.indexOf("Install template sync package") < workflow.indexOf("OPENAI_API_KEY"));
   assert.match(script, /parseTemplateSyncCommand/);
   assert.match(script, /hasWritePermission/);
   assert.match(script, /writeSubscriberStateTransition\(api, repoFullName, "declined"/);
   assert.match(script, /writeSubscriberStateTransition\(api, repoFullName, "applied"/);
   assert.match(script, /ls-files", "--modified", "--deleted", "--others", "--exclude-standard"/);
-  assert.match(script, /Validation failed; subscriber state was not marked applied/);
+  assert.match(script, /skippedPrivilegedValidationResults/);
+  assert.match(validation, /generated repository code is untrusted/);
+  assert.doesNotMatch(script, /refreshDependencies/);
+  assert.doesNotMatch(script, /runValidation/);
   assert.match(script, /renderCommandFailureComment/);
   assert.match(script, /templateSyncAlreadyCommented/);
   assert.match(script, /Cannot approve after initial generation/);
@@ -83,11 +106,15 @@ test("comment workflow supports approve revise decline with bot-token pushes", (
       script.indexOf("process.env.TEMPLATE_SYNC_GENERATION_MOCK_RESPONSE"),
   );
   assert.ok(
-    script.indexOf("if (failedValidationResults.length > 0)") <
-      script.lastIndexOf("commitAndPushIfNeeded({ pullRequest, migrationId, mode: command.action })"),
+    script.indexOf("applyGenerationPlan(generationPlan, { root })") <
+      script.lastIndexOf(
+        "commitAndPushIfNeeded({ repoFullName, pullRequest, botToken, migrationId, mode: command.action })",
+      ),
   );
-  assert.match(script, /x-access-token:\$\{botToken\}/);
-  assert.match(script, /push", "origin", `HEAD:\$\{pullRequest\.head\.ref\}`/);
+  assert.match(script, /Buffer\.from\(`x-access-token:\$\{token\}`\)/);
+  assert.match(script, /GIT_CONFIG_KEY_0: "http\.https:\/\/github\.com\/\.extraheader"/);
+  assert.doesNotMatch(script, /remote", "set-url", "origin", `https:\/\/x-access-token/);
+  assert.match(script, /push", repositoryHttpsUrl\(repoFullName\), `HEAD:\$\{pullRequest\.head\.ref\}`/);
 });
 
 test("package exposes installable command binaries", () => {

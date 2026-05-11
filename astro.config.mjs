@@ -17,12 +17,26 @@ function defaultDocsSite() {
   return owner ? `https://${owner}.github.io` : "http://localhost:4321";
 }
 
+const defaultDocsThemeScript = `
+try {
+  if (localStorage.getItem("starlight-theme") === null) {
+    localStorage.setItem("starlight-theme", "dark");
+  }
+} catch {}
+`;
+
 export default defineConfig({
   site: defaultDocsSite(),
   base: process.env.DOCS_BASE_PATH || defaultDocsBase(),
   integrations: [
     starlight({
       title: "Template Subscriber Migration System",
+      customCss: ["/src/styles/github-dark.css"],
+      head: [{ tag: "script", content: defaultDocsThemeScript }],
+      expressiveCode: {
+        themes: ["github-dark-default", "github-light-default"],
+        useStarlightUiThemeColors: true,
+      },
       sidebar: [
         {
           label: "Guide",

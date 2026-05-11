@@ -169,6 +169,7 @@ test("docs deploy workflow publishes starlight docs to github pages", () => {
   assert.match(workflow, /pages: write/);
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /npm run docs:build/);
+  assert.match(workflow, /"src\/styles\/\*\*"/);
   assert.match(workflow, /uses: actions\/upload-pages-artifact@v3/);
   assert.match(workflow, /Check Pages configuration/);
   assert.match(workflow, /pages_enabled: \$\{\{ steps\.pages\.outputs\.enabled \}\}/);
@@ -176,6 +177,8 @@ test("docs deploy workflow publishes starlight docs to github pages", () => {
   assert.match(workflow, /uses: actions\/deploy-pages@v4/);
   assert.match(astroConfig, /@astrojs\/starlight/);
   assert.match(astroConfig, /DOCS_BASE_PATH/);
+  assert.match(astroConfig, /customCss: \["\/src\/styles\/github-dark\.css"\]/);
+  assert.match(astroConfig, /github-dark-default/);
   assert.match(contentConfig, /docsLoader/);
   assert.match(contentConfig, /docsSchema/);
 });

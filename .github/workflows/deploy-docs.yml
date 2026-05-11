@@ -9,6 +9,7 @@ on:
       - "astro.config.mjs"
       - "src/content.config.js"
       - "src/content/**"
+      - "src/styles/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/deploy-docs.yml"

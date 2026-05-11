@@ -1,9 +1,9 @@
 # Template Subscriber Migration System
 
 <img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/cb407802-f55c-47d4-bb49-8561db6ee094" />
-
+<br>
 GitHub Actions helpers for publishing template changes as migration bundles and letting subscriber repositories opt into subscriber-specific migration PRs.
-
+<br><br>
 Use this when one repository acts as an upstream template and many downstream repositories need a controlled way to receive template changes after they have drifted.
 
 ## Documentation

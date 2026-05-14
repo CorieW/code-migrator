@@ -185,9 +185,18 @@ function commitAndPushIfNeeded({ repoFullName, botToken, migrationId, mode }) {
   }
   const branchName = migrationBranchName(migrationId);
   runGit(["add", "--all"]);
-  runGit(["commit", "-m", `${mode === "revise" ? "Revise" : "Apply"} template migration ${migrationId}`], {
-    stdio: "inherit",
-  });
+  runGit(
+    [
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "-m",
+      `${mode === "revise" ? "Revise" : "Apply"} template migration ${migrationId}`,
+    ],
+    {
+      stdio: "inherit",
+    },
+  );
   runGitWithAuth(["push", repositoryHttpsUrl(repoFullName), `HEAD:${branchName}`], {
     token: botToken,
     stdio: "inherit",

@@ -91,11 +91,46 @@ export function parseAndValidateGenerationPlan(rawText) {
   return validateGenerationPlan(parseGenerationJson(rawText));
 }
 
+function pathIsInsideRoot(targetPath, rootPath) {
+  const relative = path.relative(rootPath, targetPath);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function assertSafeFilesystemPath({ root, relativePath }) {
+  const rootPath = path.resolve(root);
+  const rootRealPath = fs.realpathSync(rootPath);
+  const target = path.resolve(rootPath, relativePath);
+  if (!pathIsInsideRoot(target, rootPath)) {
+    throw new Error(`Unsafe file operation path escapes generation root: ${relativePath}`);
+  }
+
+  let current = rootPath;
+  for (const segment of relativePath.split("/")) {
+    current = path.join(current, segment);
+    let stats;
+    try {
+      stats = fs.lstatSync(current);
+    } catch (error) {
+      if (error?.code === "ENOENT") {
+        break;
+      }
+      throw error;
+    }
+    if (stats.isSymbolicLink()) {
+      throw new Error(`Unsafe file operation path traverses symbolic link: ${relativePath}`);
+    }
+    if (!pathIsInsideRoot(fs.realpathSync(current), rootRealPath)) {
+      throw new Error(`Unsafe file operation path realpath escapes generation root: ${relativePath}`);
+    }
+  }
+  return target;
+}
+
 export function applyGenerationPlan(plan, { root }) {
   const changedFiles = [];
   for (const operation of plan.operations) {
     const relativePath = safeRelativePath(operation.path);
-    const target = path.join(root, relativePath);
+    const target = assertSafeFilesystemPath({ root, relativePath });
     if (operation.action === "delete") {
       if (fs.existsSync(target)) {
         fs.rmSync(target, { force: true });
@@ -104,6 +139,7 @@ export function applyGenerationPlan(plan, { root }) {
       continue;
     }
     fs.mkdirSync(path.dirname(target), { recursive: true });
+    assertSafeFilesystemPath({ root, relativePath });
     fs.writeFileSync(target, operation.content, "utf8");
     changedFiles.push(relativePath);
   }

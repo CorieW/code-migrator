@@ -134,6 +134,8 @@ test("comment workflow supports approve revise decline with bot-token pushes", (
   assert.match(script, /fetch", repoUrl, `\$\{branchName\}:template-sync-worktree`/);
   assert.match(script, /push", repositoryHttpsUrl\(repoFullName\), `HEAD:\$\{branchName\}`/);
   assert.doesNotMatch(script, /`HEAD:\$\{pullRequest\.head\.ref\}`/);
+  assert.match(script, /"core\.hooksPath=\/dev\/null"/);
+  assert.ok(script.indexOf('"core.hooksPath=/dev/null"') < script.indexOf('"commit"'));
 });
 
 test("package exposes installable command binaries", () => {

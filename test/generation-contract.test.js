@@ -59,11 +59,64 @@ test("rejects malformed model output", () => {
     () =>
       validateGenerationPlan({
         summary: "bad",
+        operations: [{ action: "update", path: ".git", content: "no" }],
+      }),
+    /Malformed generation output/,
+  );
+  assert.throws(
+    () =>
+      validateGenerationPlan({
+        summary: "bad",
+        operations: [{ action: "update", path: ".git/hooks/pre-commit", content: "no" }],
+      }),
+    /Malformed generation output/,
+  );
+  assert.throws(
+    () =>
+      validateGenerationPlan({
+        summary: "bad",
+        operations: [{ action: "update", path: "src/.git/hooks/pre-commit", content: "no" }],
+      }),
+    /Malformed generation output/,
+  );
+  assert.throws(
+    () =>
+      validateGenerationPlan({
+        summary: "bad",
         operations: [{ action: "delete", path: "remove.txt", content: "unexpected" }],
       }),
     /content must be null or omitted/,
   );
   assert.throws(() => parseAndValidateGenerationPlan("not json"), /Unexpected token/);
+});
+
+test("rejects generation writes through symlinked path components", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "template-sync-"));
+  const hooks = fs.mkdtempSync(path.join(os.tmpdir(), "template-sync-hooks-"));
+  fs.symlinkSync(hooks, path.join(root, "hooklink"), "dir");
+  const plan = validateGenerationPlan({
+    summary: "Attempt hook write",
+    operations: [{ action: "create", path: "hooklink/pre-commit", content: "echo secret\n" }],
+    driftWarnings: [],
+  });
+
+  assert.throws(() => applyGenerationPlan(plan, { root }), /symbolic link/);
+  assert.equal(fs.existsSync(path.join(hooks, "pre-commit")), false);
+});
+
+test("rejects generation deletes through symlinked path components", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "template-sync-"));
+  const hooks = fs.mkdtempSync(path.join(os.tmpdir(), "template-sync-hooks-"));
+  fs.writeFileSync(path.join(hooks, "pre-commit"), "echo secret\n", "utf8");
+  fs.symlinkSync(hooks, path.join(root, "hooklink"), "dir");
+  const plan = validateGenerationPlan({
+    summary: "Attempt hook delete",
+    operations: [{ action: "delete", path: "hooklink/pre-commit" }],
+    driftWarnings: [],
+  });
+
+  assert.throws(() => applyGenerationPlan(plan, { root }), /symbolic link/);
+  assert.equal(fs.readFileSync(path.join(hooks, "pre-commit"), "utf8"), "echo secret\n");
 });
 
 test("reports drift warnings but does not block generation", () => {

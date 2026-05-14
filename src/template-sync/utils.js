@@ -56,12 +56,13 @@ export function safeRelativePath(filePath) {
     throw new Error(`Unsafe file operation path: ${filePath}`);
   }
   const normalized = path.posix.normalize(filePath.replaceAll("\\", "/"));
+  const segments = normalized.split("/");
   if (
     normalized === "." ||
     normalized.startsWith("../") ||
     normalized === ".." ||
     path.posix.isAbsolute(normalized) ||
-    normalized.startsWith(".git/")
+    segments.includes(".git")
   ) {
     throw new Error(`Unsafe file operation path: ${filePath}`);
   }
